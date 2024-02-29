@@ -18,10 +18,10 @@ const User = sequelize.define(
       validate: {
         len: [2, 12],
       },
-      get() {
-        const value = this.getDataValue("userName");
-        return value.toUpperCase();
-      },
+      // get() {
+      //   const value = this.getDataValue("userName");
+      //   return value.toUpperCase();
+      // },
     },
     email: {
       type: DataTypes.STRING,
@@ -39,6 +39,7 @@ const User = sequelize.define(
 
     password: {
       type: DataTypes.STRING,
+      allowNull: false,
 
       // set(value) {
       //   const salt = bcrypt.genSaltSync(12);
@@ -93,8 +94,13 @@ const User = sequelize.define(
     // timestamps: false,   // to remove createdAt , updatedAt etc..
     timestamps: true,
     paranoid: true, // does not deleted the row completely
-                   //  create a timestamp called deletedAt
+    //  create a timestamp called deletedAt
   }
 );
+
+User.beforeCreate(async (user, options) => {
+  const hashedPassword = await bcrypt.hash(user.password, 10);
+  user.password = hashedPassword;
+});
 
 module.exports = User;

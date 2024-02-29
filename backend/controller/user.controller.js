@@ -1,5 +1,6 @@
 const { Op } = require("sequelize");
 const User = require("../model/user.model");
+const passport = require("passport");
 
 exports.createUser = async (req, res) => {
   try {
@@ -7,9 +8,9 @@ exports.createUser = async (req, res) => {
       userName: req.body.userName,
       email: req.body.email,
       password: req.body.password,
-    //   description: req.body.description,
-    //   mobileNumber: req.body.mobileNumber,
-    //   age: req.body.age,
+      //   description: req.body.description,
+      //   mobileNumber: req.body.mobileNumber,
+      //   age: req.body.age,
     });
 
     res.status(200).json({
@@ -25,6 +26,28 @@ exports.createUser = async (req, res) => {
   }
 };
 
+exports.login = async (req, res, next) => {
+  passport.authenticate("local", (err, user, info) => {
+    if (err) {
+      return next(err);
+    }
+
+    if (!user) {
+      return res.status(401).json({
+        message: "Authentication Failed",
+        user,
+        err
+      });
+    }
+    req.login(user, (err) => {
+      if (err) {
+        return next(err);
+      }
+      return res.status(200).json({ message: "LogIn Successfull", user });
+    });
+  })(req, res, next);
+};
+
 exports.getUsers = async (req, res) => {
   try {
     const users = await User.findAll({
@@ -38,25 +61,47 @@ exports.getUsers = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
+      message: error.message,
+      stack: error.stack,
     });
   }
 };
 
-exports.getSingleUser = async (req, res) => {
-  try {
-    const userId = req.params.id;
-    const user = await User.findByPk(userId);
+exports.logout = (req, res) => {
+  req.logout((err) => {
+    if(err) {
+      return res.status(200).json({
+        message : err.message,
+        stack : err.stack,
+      })
+    }
 
     res.status(200).json({
-      success: true,
-      user,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-    });
-  }
-};
+      message : "Logout SUccessFully"
+    })
+  });
+  res.status(200).json({
+    message : 'Logout successfull'
+  })
+}
+
+// exports.getSingleUser = async (req, res) => {
+//   try {
+//     const userId = req.params.id;
+//     const user = await User.findByPk(userId);
+
+//     res.status(200).json({
+//       success: true,
+//       user,
+//     });
+//   } catch (error) {
+//     res.status(500).json({
+//       success: false,
+//       message: error.message,
+//       stack: error.stack,
+//     });
+//   }
+// };
 
 exports.updateUser = async (req, res) => {
   try {
@@ -80,6 +125,7 @@ exports.updateUser = async (req, res) => {
     res.status(500).json({
       success: false,
       message: error.message,
+      stack: error.stack,
     });
   }
 };
@@ -97,6 +143,7 @@ exports.deleteUser = async (req, res) => {
     res.status(500).json({
       success: false,
       message: error.message,
+      stack: error.stack,
     });
   }
 };
