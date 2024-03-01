@@ -36,13 +36,22 @@ exports.login = async (req, res, next) => {
       return res.status(401).json({
         message: "Authentication Failed",
         user,
-        err
+        err,
       });
     }
     req.login(user, (err) => {
       if (err) {
         return next(err);
       }
+
+      // Set cookies with expiration date upon successful authentication
+      const cookieOptions = {
+        maxAge: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
+        httpOnly: true, // Cookie cannot be accessed via client-side JavaScript
+      };
+      res.cookie("userId", user.userId, cookieOptions);
+      res.cookie("userName", user.userName, cookieOptions);
+
       return res.status(200).json({ message: "LogIn Successfull", user });
     });
   })(req, res, next);
@@ -68,22 +77,27 @@ exports.getUsers = async (req, res) => {
 };
 
 exports.logout = (req, res) => {
-  req.logout((err) => {
-    if(err) {
-      return res.status(200).json({
-        message : err.message,
-        stack : err.stack,
-      })
-    }
+  try {
+    req.logout((err) => {
+      if (err) {
+        return res.status(200).json({
+          message: err.message,
+          stack: err.stack,
+        });
+      }
+    });
 
-    res.status(200).json({
-      message : "Logout SUccessFully"
-    })
-  });
-  res.status(200).json({
-    message : 'Logout successfull'
-  })
-}
+    // Remove cookies upon logout
+    res.clearCookie("userId");
+    res.clearCookie("userName");
+
+    return res.status(200).json({ message: "Logout successful" });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: "Error during logout", error: error.message });
+  }
+};
 
 // exports.getSingleUser = async (req, res) => {
 //   try {
